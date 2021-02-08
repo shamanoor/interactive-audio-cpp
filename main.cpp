@@ -6,6 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/video/background_segm.hpp>
+#include <windows.h> // for audio
 
 
 using namespace std;
@@ -21,13 +22,14 @@ int main() {
 	int deviceID = 0;
 	int apiID = CAP_ANY;
 
+	PlaySound(TEXT("vald-rappel.wav"), NULL, SND_ASYNC);
+
 	cap.open(deviceID, apiID);
 
 	if (!cap.isOpened()) {
 		cerr << "Unable to open camera.\n";
 		return -1;
 	}
-
 	for (;;) {
 		cap.read(frame);
 
@@ -44,8 +46,7 @@ int main() {
 		// to get a quantitative value, we compute the average pixel brightness in the fgMask
 		// closer to 0 means no motion, the higher the number, the more motion there is
 		avgMotion = mean(fgMask); 
-		cout << "Average amount of motion: ";
-		cout << avgMotion[0] << endl;
+		cout << "Average amount of motion: " << avgMotion[0] << endl;
 
 		if (waitKey(5) >= 0) {
 			break;
