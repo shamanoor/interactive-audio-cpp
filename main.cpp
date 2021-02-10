@@ -22,7 +22,8 @@ int main() {
 	int deviceID = 0;
 	int apiID = CAP_ANY;
 
-	PlaySound(TEXT("vald-rappel.wav"), NULL, SND_ASYNC);
+	mciSendString(L"open \"vald-desaccorde.mp3\" type mpegvideo alias mp3", NULL, 0, NULL);
+	mciSendString(L"play mp3", NULL, 0, NULL);
 
 	cap.open(deviceID, apiID);
 
