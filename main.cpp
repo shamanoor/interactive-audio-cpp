@@ -7,6 +7,7 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/video/background_segm.hpp>
 #include <windows.h> // for audio
+#include <codecvt>
 
 
 using namespace std;
@@ -22,8 +23,8 @@ int main() {
 	int deviceID = 0;
 	int apiID = CAP_ANY;
 
-	mciSendString(L"open \"vald-desaccorde.mp3\" type mpegvideo alias mp3", NULL, 0, NULL);
-	mciSendString(L"play mp3", NULL, 0, NULL);
+	mciSendString(L"open \"vald-rappel.wav\" type mpegvideo alias wav", NULL, 0, NULL);
+	mciSendString(L"play wav", NULL, 0, NULL);
 
 	cap.open(deviceID, apiID);
 
@@ -46,8 +47,26 @@ int main() {
 
 		// to get a quantitative value, we compute the average pixel brightness in the fgMask
 		// closer to 0 means no motion, the higher the number, the more motion there is
-		avgMotion = mean(fgMask); 
+		avgMotion = mean(fgMask);
+		int speed = avgMotion[0];
 		cout << "Average amount of motion: " << avgMotion[0] << endl;
+
+		string param_value = "0";
+		if (speed < 5) {
+			param_value = "500";
+		}
+		else {
+			param_value = "1000";
+		}
+
+		string param = "set wav speed ";
+		param = param + param_value;
+
+		// create the parameter to set the speed
+		std::wstring str_turned_to_wstr = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(param);
+		LPCWSTR parameter = str_turned_to_wstr.c_str();
+	;
+		mciSendString(parameter, 0, 0, 0);
 
 		if (waitKey(5) >= 0) {
 			break;
