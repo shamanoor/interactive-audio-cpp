@@ -8,20 +8,30 @@
 #include <opencv2/video/background_segm.hpp>
 #include <windows.h> // for audio
 #include <codecvt>
-
 #include <fmod.hpp>
 
 using namespace FMOD;
 using namespace std;
 using namespace cv;
 
-FMOD::Sound* song;
-
 
 int main() {
+	// Use OpenCV to do webcam loading + motion tracking
+	Mat frame, fgMask, grayFrame; // fgMask is for background subtraction
+	VideoCapture cap;
+	Ptr<BackgroundSubtractor> pBackSub = createBackgroundSubtractorKNN(10); // for background subtraction
+	Scalar avgMotion; // to store the mean value of the motion
+	
+	int deviceID = 0;
+	int apiID = CAP_ANY;
+	float startFrequency = 0;
+	int delta = 150;
+	int threshold = 20;
+
 	FMOD_RESULT result;
 	FMOD::System* syst = NULL;
 
+	// Stuff for audio
 	result = FMOD::System_Create(&syst);      // Create the main system object.
 	if (result != FMOD_OK)
 	{
@@ -38,32 +48,23 @@ int main() {
 
 	FMOD::Sound* song;
 	FMOD::Channel* channel;
+
 	syst->createSound("vald-rappel.wav", FMOD_DEFAULT, NULL, &song);
-
 	syst->playSound(song, NULL, false, &channel);
+	channel->getFrequency(&startFrequency);
 
+	// initialize frequency to startfrequency so we play the song at normal rate initially
+	float frequency = startFrequency; 
 
-	// Use OpenCV to do webcam loading + motion tracking
-	Mat frame, fgMask, grayFrame; // fgMask is for background subtraction
-	VideoCapture cap;
-	Ptr<BackgroundSubtractor> pBackSub = createBackgroundSubtractorKNN(10); // for background subtraction
-	Scalar avgMotion; // to store the mean value of the motion
-	
-	int deviceID = 0;
-	int apiID = CAP_ANY;
-	float frequency = 0;
-	channel->getFrequency(&frequency);
-
+	// open camera
 	cap.open(deviceID, apiID);
 
 	if (!cap.isOpened()) {
 		cerr << "Unable to open camera.\n";
 		return -1;
 	}
-	for (;;) {
-		frequency = max(2000, frequency - 100); // constrain frequency
-		channel->setFrequency(frequency);
 
+	for (;;) {
 		cap.read(frame);
 
 		// update background model
@@ -80,8 +81,22 @@ int main() {
 		// closer to 0 means no motion, the higher the number, the more motion there is
 		avgMotion = mean(fgMask);
 		int avgMotion_int = avgMotion[0];
-		// cout << "Average amount of motion: " << avgMotion[0] << endl;
+		cout << "Average amount of motion: " << avgMotion_int << endl;
 
+		// TODO: make change frequency a function of motion detected
+
+		if (avgMotion_int < threshold) {
+			frequency -= delta;
+		}
+		else {
+			frequency += delta;
+		}
+
+		// constrain frequency
+		frequency = min(startFrequency*1.5, max(frequency, startFrequency/5));
+
+		// update playback speed
+		channel->setFrequency(frequency);
 
 		if (waitKey(5) >= 0) {
 			break;
