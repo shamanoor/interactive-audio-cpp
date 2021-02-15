@@ -14,14 +14,24 @@ using namespace FMOD;
 using namespace std;
 using namespace cv;
 
-int updateFrequency(int motion, int delta, int currentFrequency);
 
 int motionThreshold;
+const int numDatapoints = 15;
+array<int, numDatapoints> motions {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0
+};
+
 
 FMOD_RESULT result;
 FMOD::System* syst = NULL;
 FMOD::Channel* channel;
 
+array<int, numDatapoints> initArray(array<int, numDatapoints> array) {
+	for (int i = 0; i < numDatapoints; i++) {
+		array[i] = 0;
+	}
+	return array;
+}
 
 void initAudio() {
 	result = FMOD::System_Create(&syst);      // Create the main system object.
@@ -52,6 +62,16 @@ int updateFrequency(int motion, int delta, int currentFrequency, int startFreque
 
 }
 
+
+array<int, numDatapoints> updateFrequencyArray(int currentMotion, array<int, numDatapoints> motions) {
+	for (int i = numDatapoints - 1; i > 0; i--) {
+		motions[i] = motions[i - 1];
+	}
+
+	motions[0] = currentMotion;
+	return motions;
+}
+
 int main() {
 	// Use OpenCV to do webcam loading + motion tracking
 	Mat frame, fgMask, grayFrame; // fgMask is for background subtraction
@@ -77,6 +97,7 @@ int main() {
 
 	// initialize frequency to startfrequency so we play the song at normal rate initially
 	float frequency = startFrequency; 
+	float frequencyMA = startFrequency;
 
 	// open camera
 	cap.open(deviceID, apiID);
@@ -95,7 +116,7 @@ int main() {
 		// update background model
 		pBackSub->apply(frame, fgMask);
 
-		imshow("Live", frame );
+		imshow("Live", frame);
 		imshow("FG Mask", fgMask);
 
 		// to get a quantitative value, we compute the average pixel brightness in the fgMask
@@ -106,6 +127,11 @@ int main() {
 
 		// TODO: make change frequency a function of motion detected
 		frequency = updateFrequency(avgMotion_int, delta, frequency, startFrequency);
+		motions = updateFrequencyArray(avgMotion_int, motions);
+
+		for (int i = 0; i < numDatapoints; i++) {
+			cout << "motions[i] : " << motions[i] << endl;
+		}
 
 		// update playback speed
 		channel->setFrequency(frequency);
