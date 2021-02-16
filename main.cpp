@@ -14,11 +14,11 @@ using namespace FMOD;
 using namespace std;
 using namespace cv;
 
-
+const int numDatapoints = 45;
+int motionMA;
 int motionThreshold;
-const int numDatapoints = 15;
 array<int, numDatapoints> motions {
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0
 };
 
 
@@ -63,7 +63,7 @@ int updateFrequency(int motion, int delta, int currentFrequency, int startFreque
 }
 
 
-array<int, numDatapoints> updateFrequencyArray(int currentMotion, array<int, numDatapoints> motions) {
+array<int, numDatapoints> updateMotionArray(int currentMotion, array<int, numDatapoints> motions) {
 	for (int i = numDatapoints - 1; i > 0; i--) {
 		motions[i] = motions[i - 1];
 	}
@@ -127,14 +127,31 @@ int main() {
 
 		// TODO: make change frequency a function of motion detected
 		frequency = updateFrequency(avgMotion_int, delta, frequency, startFrequency);
-		motions = updateFrequencyArray(avgMotion_int, motions);
+		motions = updateMotionArray(avgMotion_int, motions);
 
+		int sum = 0;
 		for (int i = 0; i < numDatapoints; i++) {
-			cout << "motions[i] : " << motions[i] << endl;
+			sum += motions[i];
 		}
 
+		motionMA = sum / numDatapoints;
+		
+		float factor;
+		if (motionMA > 3) {
+			factor = log10(motionMA); 
+		}
+		else {
+			factor = log10(4);
+		}
+
+		//TODO: use a map function rather than log10, so scale 0 - 70 to a scale of ... 0.4 - 1.6
+		float playbackspeed = factor * startFrequency;
+
+		// constrain playbacks peed
+		playbackspeed = max(startFrequency / 5, min(startFrequency*1.6, playbackspeed)); 
+
 		// update playback speed
-		channel->setFrequency(frequency);
+		channel->setFrequency(playbackspeed);
 
 		if (waitKey(5) >= 0) {
 			break;
