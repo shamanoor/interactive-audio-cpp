@@ -17,6 +17,9 @@ using namespace cv;
 const int numDatapoints = 45;
 int motionMA;
 int motionThreshold;
+
+float scaledSpeed = 0;
+
 array<int, numDatapoints> motions {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0
 };
@@ -70,6 +73,10 @@ array<int, numDatapoints> updateMotionArray(int currentMotion, array<int, numDat
 
 	motions[0] = currentMotion;
 	return motions;
+}
+
+float computeScaledSpeed(float value, float sourceRangeMin, float sourceRangeMax, float targetRangeMin, float targetRangeMax) {
+	return targetRangeMin + (targetRangeMax - targetRangeMin) * ((value - sourceRangeMin) / (sourceRangeMax - sourceRangeMin));
 }
 
 int main() {
@@ -136,20 +143,9 @@ int main() {
 
 		motionMA = sum / numDatapoints;
 		
-		float factor;
-		if (motionMA > 3) {
-			factor = log10(motionMA); 
-		}
-		else {
-			factor = log10(4);
-		}
-
-		//TODO: use a map function rather than log10, so scale 0 - 70 to a scale of ... 0.4 - 1.6
+		float factor = computeScaledSpeed(motionMA, 0, 50, 0.4, 1.6);
 		float playbackspeed = factor * startFrequency;
-
-		// constrain playbacks peed
-		playbackspeed = max(startFrequency / 5, min(startFrequency*1.6, playbackspeed)); 
-
+		
 		// update playback speed
 		channel->setFrequency(playbackspeed);
 
