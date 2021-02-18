@@ -14,14 +14,14 @@ using namespace FMOD;
 using namespace std;
 using namespace cv;
 
-const int numDatapoints = 45;
+const int numDatapoints = 30;
 int motionMA;
 int motionThreshold;
 
 float scaledSpeed = 0;
 
-array<int, numDatapoints> motions {
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0
+array<int, numDatapoints> motions{
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
 
@@ -50,19 +50,6 @@ void initAudio() {
 		printf("FMOD error!\n");
 		exit(-1);
 	}
-}
-
-int updateFrequency(int motion, int delta, int currentFrequency, int startFrequency) {
-	if (motion < motionThreshold) {
-		currentFrequency -= delta;
-	}
-	else {
-		currentFrequency += delta;
-	}
-
-	// constrain frequency
-	return min(startFrequency * 1.5, max(currentFrequency, startFrequency / 5));
-
 }
 
 
@@ -132,8 +119,6 @@ int main() {
 		int avgMotion_int = int(avgMotion[0]);
 		cout << "Average amount of motion: " << avgMotion_int << endl;
 
-		// TODO: make change frequency a function of motion detected
-		frequency = updateFrequency(avgMotion_int, delta, frequency, startFrequency);
 		motions = updateMotionArray(avgMotion_int, motions);
 
 		int sum = 0;
@@ -143,7 +128,7 @@ int main() {
 
 		motionMA = sum / numDatapoints;
 		
-		float factor = computeScaledSpeed(motionMA, 0, 50, 0.4, 1.6);
+		float factor = computeScaledSpeed(motionMA, 0, 40, 0.4, 1.6);
 		float playbackspeed = factor * startFrequency;
 		
 		// update playback speed
