@@ -19,11 +19,15 @@ int motionMA;
 int motionThreshold;
 
 float scaledSpeed = 0;
+float weightedAverage;
 
 array<int, numDatapoints> motions{
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+array<int, numDatapoints> weightedMotions{
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
 
 FMOD_RESULT result;
 FMOD::System* syst = NULL;
@@ -60,6 +64,25 @@ array<int, numDatapoints> updateMotionArray(int currentMotion, array<int, numDat
 
 	motions[0] = currentMotion;
 	return motions;
+}
+
+array<int, numDatapoints> computeWeightedArray(array<int, numDatapoints> motions) {
+	for (int i = 0; i < numDatapoints; i++) {
+		motions[i] = motions[i] * (numDatapoints - i);
+	}
+	return motions;
+}
+
+float computeWeightedAverage(array<int, numDatapoints> weightedMotions) {
+	int sum = 0;
+	int totalWeight = 0;
+
+	for (int i = 0; i < numDatapoints; i++) {
+		sum += weightedMotions[i];
+		totalWeight += i;
+	}
+
+	return sum / totalWeight;
 }
 
 float computeScaledSpeed(float value, float sourceRangeMin, float sourceRangeMax, float targetRangeMin, float targetRangeMax) {
@@ -120,15 +143,10 @@ int main() {
 		cout << "Average amount of motion: " << avgMotion_int << endl;
 
 		motions = updateMotionArray(avgMotion_int, motions);
-
-		int sum = 0;
-		for (int i = 0; i < numDatapoints; i++) {
-			sum += motions[i];
-		}
-
-		motionMA = sum / numDatapoints;
+		weightedMotions = computeWeightedArray(motions);
+		weightedAverage = computeWeightedAverage(weightedMotions);
 		
-		float factor = computeScaledSpeed(motionMA, 0, 40, 0.4, 1.6);
+		float factor = computeScaledSpeed(weightedAverage, 0, 40, 0.4, 1.6);
 		float playbackspeed = factor * startFrequency;
 		
 		// update playback speed
